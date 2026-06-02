@@ -1,4 +1,4 @@
-#!/home/tansin/.conda/envs/lkurve/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 norm_lc.py - Normalizador interactivo de curvas de luz TESS.

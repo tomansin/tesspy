@@ -1,4 +1,4 @@
-#!/home/tansin/.conda/envs/lkurve/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 download_tpfs.py — Descarga Target Pixel Files (TPF) de TESS para un objeto dado

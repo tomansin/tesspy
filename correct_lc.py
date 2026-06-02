@@ -1,4 +1,4 @@
-#!/home/tansin/.conda/envs/lkurve/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 correct_lc.py - Corrector de fondo de cielo para TPF TESS.

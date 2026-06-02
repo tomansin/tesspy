@@ -1,4 +1,4 @@
-#!/home/tansin/.conda/envs/lkurve/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 plot_pixels.py — Genera imágenes JPEG pixel-by-pixel de archivos TPF (Target Pixel Files)

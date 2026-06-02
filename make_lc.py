@@ -1,4 +1,4 @@
-#!/home/tansin/.conda/envs/lkurve/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 make_lc.py - Visualizador interactivo de TPF TESS en formato FITS para generar apertura y curva de luz.

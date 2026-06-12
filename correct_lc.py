@@ -133,6 +133,8 @@ def plot_sky_viewer(tpf, filename):
     selection_active = [False]
     corr_mode        = ['pca']
     bkg_state        = [None]
+    frame_idx        = [0]
+    n_frames         = len(tpf.time)
 
     tgt = _target_part(filename)
     aper_file = f'apers/tess-aperture_{tgt}.csv'
@@ -152,7 +154,7 @@ def plot_sky_viewer(tpf, filename):
     # ── Funciones de dibujo ───────────────────────────────────────────────────
 
     def draw_tpf():
-        frame_data = tpf.flux[0].value
+        frame_data = tpf.flux[frame_idx[0]].value
         if tpf_im[0] is None:
             tpf_im[0] = ax_tpf.imshow(frame_data, cmap='viridis', origin='lower',
                                        aspect='equal')
@@ -198,7 +200,9 @@ def plot_sky_viewer(tpf, filename):
         n_ap  = int(np.sum(aperture_mask[0])) if aperture_mask[0] is not None else 0
         sel_tag = '  [SELECCION]' if selection_active[0] else ''
         ax_tpf.set_title(
-            f'TPF  |  Cielo: {n_sky} px  |  Apertura: {n_ap} px{sel_tag}\n'
+            f'TPF  |  Frame {frame_idx[0] + 1}/{n_frames}  '
+            f'(t={tpf.time.value[frame_idx[0]]:.4f})\n'
+            f'Cielo: {n_sky} px  |  Apertura: {n_ap} px{sel_tag}\n'
             f'threshold={threshold[0]:.2f}  PCA={pca_number[0]}',
             fontsize=10
         )
@@ -219,6 +223,8 @@ def plot_sky_viewer(tpf, filename):
                 n_sky = int(np.sum(sky_mask[0])) if sky_mask[0] is not None else 0
                 ax_pca.set_title(f'Fondo por mediana  —  {n_sky} px de cielo', fontsize=10)
                 ax_pca.grid(True, alpha=0.3, linestyle='--')
+                ax_pca.axvline(tpf.time.value[frame_idx[0]], color='red',
+                               linestyle='--', linewidth=1, alpha=0.8)
         else:
             dm = dm_state[0]
             if dm is None:
@@ -235,6 +241,8 @@ def plot_sky_viewer(tpf, filename):
                 ax_pca.set_title(f'Componentes PCA ({pca_number[0]})  —  {n_sky} px de cielo',
                                  fontsize=10)
                 ax_pca.grid(True, alpha=0.3, linestyle='--')
+                ax_pca.axvline(tpf.time.value[frame_idx[0]], color='red',
+                               linestyle='--', linewidth=1, alpha=0.8)
 
     def draw_lc():
         ax_lc.clear()
@@ -266,6 +274,8 @@ def plot_sky_viewer(tpf, filename):
         mode_tag = 'Mediana' if corr_mode[0] == 'median' else f'PCA={pca_number[0]}'
         ax_lc.set_title(f'Curva de luz  [{mode_tag}]', fontsize=10)
         ax_lc.grid(True, alpha=0.3, linestyle='--')
+        ax_lc.axvline(tpf.time.value[frame_idx[0]], color='red',
+                      linestyle='--', linewidth=1, alpha=0.8)
         ax_lc.legend(loc='best', fontsize=8)
 
     def refresh():
@@ -381,6 +391,14 @@ def plot_sky_viewer(tpf, filename):
             recompute()
             refresh()
 
+        elif event.key == 'l':
+            frame_idx[0] = min(frame_idx[0] + 1, n_frames - 1)
+            refresh()
+
+        elif event.key == 'j':
+            frame_idx[0] = max(frame_idx[0] - 1, 0)
+            refresh()
+
     fig.canvas.mpl_connect('button_press_event', on_tpf_click)
     fig.canvas.mpl_connect('key_press_event', on_key)
 
@@ -394,6 +412,7 @@ def plot_sky_viewer(tpf, filename):
     print("  m         alternar modo corrección: PCA  <->  Mediana")
     print("  +/-       aumentar/disminuir threshold de máscara de cielo")
     print("  ↑/↓       más/menos componentes PCA")
+    print("  j / l     frame anterior / siguiente del TPF")
     print("  z         guardar curva corregida  ->  lcs/tess-corrected_*.csv")
     print("  q         cerrar (pregunta si guardar)")
     print("="*50)

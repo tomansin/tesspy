@@ -13,6 +13,7 @@ import numpy as np
 import sys
 import os
 import argparse
+import termios
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector
 
@@ -27,10 +28,13 @@ def load_lightcurve(filename):
         time     = data[:, 0]
         flux     = data[:, 1]
         flux_err = data[:, 2]
+        n_nan = int(np.sum(~np.isfinite(flux)))
         print(f"LOADED LC FROM {filename}")
         print(f"  Puntos:  {len(time)}")
-        print(f"  Tiempo:  {time[0]:.4f} - {time[-1]:.4f} TBJD")
+        print(f"  Tiempo:  {np.nanmin(time):.4f} - {np.nanmax(time):.4f} TBJD")
         print(f"  Columnas: {header}")
+        if n_nan:
+            print(f"  Puntos con flujo NaN: {n_nan} (excluidos de los ajustes)")
         return time, flux, flux_err, data, header
     except Exception as e:
         print(f"Error cargando curva de luz: {e}")
@@ -39,8 +43,10 @@ def load_lightcurve(filename):
 
 def sigma_clip_legendre(t_norm, flux, flux_err, order, xi_lo=2.0, xi_hi=3.0):
     """Ajuste iterativo de polinomio Legendre con sigma clipping. Retorna (coeffs, t_c, f_c) o (None, None, None)."""
+    valid = np.isfinite(t_norm) & np.isfinite(flux)
+    t_norm, flux, flux_err = t_norm[valid], flux[valid], flux_err[valid]
     if len(t_norm) <= order + 1:
-        return None, None
+        return None, None, None
     try:
         w = 1.0 / np.where(flux_err > 0, flux_err, 1.0)
         sigma0 = np.std(flux)
@@ -82,7 +88,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
     ax_lc   = fig.add_subplot(gs[0])
     ax_norm = fig.add_subplot(gs[1], sharex=ax_lc)
 
-    tmin, tmax = time[0], time[-1]
+    tmin, tmax = np.nanmin(time), np.nanmax(time)
     t_norm = (time - tmin) / (tmax - tmin)
 
     # Discontinuidades: lista ordenada de tiempos reales
@@ -100,6 +106,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
     active_seg = [0]    # índice del segmento activo
     disc_mode  = [False]
     pending    = [None]
+    view_state = {'init': False}   # conserva zoom/pan entre refits
 
     # Artists del ajuste (reconstruidos en refit)
     poly_artists   = []
@@ -139,16 +146,24 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
 
     def _clear_fit_artists():
         for a in poly_artists:
-            a.remove()
+            if a is not None:
+                a.remove()
         poly_artists.clear()
         for a in culled_artists:
-            a.remove()
+            if a is not None:
+                a.remove()
         culled_artists.clear()
         seg_coeffs.clear()
 
     COLORS = plt.cm.tab10.colors
 
     def refit():
+        keep_view = view_state['init']
+        if keep_view:
+            xlim      = ax_lc.get_xlim()
+            ylim_lc   = ax_lc.get_ylim()
+            ylim_norm = ax_norm.get_ylim()
+
         _clear_fit_artists()
         segments = get_segments()
 
@@ -196,9 +211,16 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
             culled_artists.append(sc)
 
         ax_lc.legend(loc='best', fontsize=8)
-        ax_lc.relim()
-        ax_lc.autoscale_view()
-        update_norm()
+        if keep_view:
+            update_norm(ylim_norm)
+            # ax_norm.clear() puede resetear el eje x compartido (sharex)
+            ax_lc.set_xlim(xlim)
+            ax_lc.set_ylim(ylim_lc)
+        else:
+            ax_lc.relim()
+            ax_lc.autoscale_view()
+            update_norm(None)
+            view_state['init'] = True
 
     def update_highlight():
         """Actualiza solo el grosor/alpha de las líneas sin refitear."""
@@ -222,7 +244,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
             cont[mask] = np.polynomial.legendre.legval(t_norm[mask], seg_coeffs[i])
         return cont
 
-    def update_norm():
+    def update_norm(keep_ylim=None):
         ax_norm.clear()
         ax_norm.axhline(y=1.0, color='red', linestyle='--', alpha=0.5, linewidth=1)
         ax_norm.set_xlabel('Tiempo (TBJD)', fontsize=10)
@@ -239,12 +261,15 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
                 ax_norm.axvline(t_d, color='blue', linestyle='--',
                                 linewidth=1.2, alpha=0.7)
             ax_norm.legend(loc='best', fontsize=8)
-            valid = norm_flux[np.isfinite(norm_flux)]
-            if len(valid) > 0:
-                lo = np.percentile(valid, 1)
-                hi = np.percentile(valid, 99)
-                margin = (hi - lo) * 0.2
-                ax_norm.set_ylim(lo - margin, hi + margin)
+            if keep_ylim is not None:
+                ax_norm.set_ylim(keep_ylim)
+            else:
+                valid = norm_flux[np.isfinite(norm_flux)]
+                if len(valid) > 0:
+                    lo = np.percentile(valid, 1)
+                    hi = np.percentile(valid, 99)
+                    margin = (hi - lo) * 0.2
+                    ax_norm.set_ylim(lo - margin, hi + margin)
 
         _update_title()
         fig.canvas.draw_idle()
@@ -411,10 +436,10 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
                   fontsize=11, fontweight='bold')
 
     removed_ranges  = []   # lista de (t0, t1) excluidos
-    range_patches   = []   # axvspan patches
     span2           = [None]
     sel2_active     = [False]
     pending2        = [None]
+    view2_state     = {'init': False}   # conserva zoom/pan entre redraws
 
     def _build_save_mask():
         mask = np.ones(len(time), dtype=bool)
@@ -423,6 +448,11 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
         return mask
 
     def _redraw2():
+        keep_view = view2_state['init']
+        if keep_view:
+            xlim2 = ax2.get_xlim()
+            ylim2 = ax2.get_ylim()
+
         ax2.clear()
         mask = _build_save_mask()
         ax2.plot(time[mask], norm_flux[mask], 'k.', markersize=3, alpha=0.8,
@@ -443,6 +473,11 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
         ax2.set_title(f'Curva normalizada{rem_tag}{sel_tag}', fontsize=10)
         ax2.grid(True, alpha=0.3, linestyle='--')
         ax2.legend(loc='best', fontsize=8)
+        if keep_view:
+            ax2.set_xlim(xlim2)
+            ax2.set_ylim(ylim2)
+        else:
+            view2_state['init'] = True
         fig2.canvas.draw_idle()
 
     _redraw2()
@@ -518,6 +553,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
     plt.show()
 
     if pending2[0] == 'quit':
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
         resp = input("\n  Guardar curva normalizada? [S/n]: ").strip().lower()
         if resp not in ('n', 'no'):
             do_save2()

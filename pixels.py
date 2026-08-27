@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 """
-plot_pixels.py — Genera imágenes JPEG pixel-by-pixel de archivos TPF (Target Pixel Files)
+pixels.py — Genera imágenes JPEG pixel-by-pixel de archivos TPF (Target Pixel Files)
 de misiones TESS/Kepler/K2 usando lightkurve. Solo guarda las imágenes, sin ventanas gráficas.
 
 Uso:
-    python plot_pixels.py <patron_o_archivo> [...]
+    python pixels.py <patron_o_archivo> [...]
 
 Ejemplos:
-    python plot_pixels.py archivo.fits
-    python plot_pixels.py tpfs/*.fits
-    python plot_pixels.py "tpfs/*.fits"
-    python plot_pixels.py sector1/*.fits sector2/*.fits
+    python pixels.py archivo.fits
+    python pixels.py tpfs/*.fits
+    python pixels.py "tpfs/*.fits"
+    python pixels.py sector1/*.fits sector2/*.fits
 """
 
 import glob

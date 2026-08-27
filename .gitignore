@@ -2,3 +2,4 @@
 *.fits
 pruebas.py
 pyrightconfig.json
+__pycache__/

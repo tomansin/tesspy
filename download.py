@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 """
-download_tpfs.py — Descarga Target Pixel Files (TPF) de TESS para un objeto dado
+download.py — Descarga Target Pixel Files (TPF) de TESS para un objeto dado
 usando el servicio TESScut a través de lightkurve.
 
 Los archivos FITS se guardan en el subdirectorio 'tpfs/' con el formato:
     tess-tpf_<target>_<sector>.fits
 
 Uso:
-    python download_tpfs.py <target> [--cutout-size N [M]]
-    python download_tpfs.py            (solicita el target interactivamente)
+    python download.py <target> [--cutout-size N [M]]
+    python download.py            (solicita el target interactivamente)
 
 Ejemplos:
-    python download_tpfs.py "TIC 261136679"
-    python download_tpfs.py "HD 209458" --cutout-size 15
-    python download_tpfs.py "TOI-700" --cutout-size 10 20
+    python download.py "TIC 261136679"
+    python download.py "HD 209458" --cutout-size 15
+    python download.py "TOI-700" --cutout-size 10 20
 """
 
 import argparse

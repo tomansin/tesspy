@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-norm_lc.py - Normalizador interactivo de curvas de luz TESS.
+normalize.py - Normalizador interactivo de curvas de luz TESS.
 
 Uso:
-    norm_lc.py <curva.csv>
+    normalize.py <curva.csv>
 """
 
 import argparse
@@ -402,6 +402,9 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
         elif event.key == 'z':
             do_save()
 
+        elif event.key == '?':
+            _print_help()
+
     fig.canvas.mpl_connect('key_press_event', on_key)
     fig.canvas.mpl_connect('button_press_event', on_click)
 
@@ -409,21 +412,25 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
 
     refit()
 
-    print("\n" + "="*50)
-    print("TESS LC NORMALIZER")
-    print("="*50)
-    print("  o         activar zoom (rectángulo) de matplotlib")
-    print("  p         activar pan/arrastre (drag) de matplotlib")
-    print("  h         restablecer vista original (home)")
-    print("  espacio   ciclar al siguiente segmento")
-    print("  a         activar modo discontinuidad (click para colocar)")
-    print("  d         eliminar última discontinuidad")
-    print("  +/-       subir/bajar orden del segmento activo")
-    print("  ↓/↑       bajar/subir σ inferior del segmento activo")
-    print("  ←/→       bajar/subir σ superior del segmento activo")
-    print("  z         guardar normalizada  ->  lcs/tess-normalized_*.csv")
-    print("  q         cerrar (pregunta si guardar)")
-    print("="*50)
+    def _print_help():
+        print("\n" + "="*50)
+        print("TESS LC NORMALIZER")
+        print("="*50)
+        print("  o         activar zoom (rectángulo) de matplotlib")
+        print("  p         activar pan/arrastre (drag) de matplotlib")
+        print("  h         restablecer vista original (home)")
+        print("  espacio   ciclar al siguiente segmento")
+        print("  a         activar modo discontinuidad (click para colocar)")
+        print("  d         eliminar última discontinuidad")
+        print("  +/-       subir/bajar orden del segmento activo")
+        print("  ↓/↑       bajar/subir σ inferior del segmento activo")
+        print("  ←/→       bajar/subir σ superior del segmento activo")
+        print("  z         guardar normalizada  ->  lcs/tess-normalized_*.csv")
+        print("  ?         mostrar esta ayuda")
+        print("  q         cerrar (pregunta si guardar)")
+        print("="*50)
+
+    _print_help()
 
     plt.show()
 
@@ -545,19 +552,26 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
         elif event.key == 'z':
             do_save2()
 
+        elif event.key == '?':
+            _print_help2()
+
     fig2.canvas.mpl_connect('key_press_event', on_key2)
 
-    print("\n" + "="*50)
-    print("VISTA NORMALIZADA")
-    print("="*50)
-    print("  o         activar zoom (rectángulo) de matplotlib")
-    print("  p         activar pan/arrastre (drag) de matplotlib")
-    print("  h         restablecer vista original (home)")
-    print("  a         activar/desactivar selección de rangos a eliminar")
-    print("  e         restaurar último rango eliminado")
-    print("  z         guardar  ->  lcs/tess-normalized_*.csv")
-    print("  q         cerrar (pregunta si guardar)")
-    print("="*50)
+    def _print_help2():
+        print("\n" + "="*50)
+        print("VISTA NORMALIZADA")
+        print("="*50)
+        print("  o         activar zoom (rectángulo) de matplotlib")
+        print("  p         activar pan/arrastre (drag) de matplotlib")
+        print("  h         restablecer vista original (home)")
+        print("  a         activar/desactivar selección de rangos a eliminar")
+        print("  e         restaurar último rango eliminado")
+        print("  z         guardar  ->  lcs/tess-normalized_*.csv")
+        print("  ?         mostrar esta ayuda")
+        print("  q         cerrar (pregunta si guardar)")
+        print("="*50)
+
+    _print_help2()
     plt.show()
 
     if pending2[0] == 'quit':

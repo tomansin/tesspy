@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-correct_lc.py - Corrector de fondo de cielo para TPF TESS.
+background.py - Corrector de fondo de cielo para TPF TESS.
 
 Uso:
-    correct_lc.py <archivo.fits>
+    background.py <archivo.fits>
 """
 
 import argparse
@@ -403,26 +403,33 @@ def plot_sky_viewer(tpf, filename):
             frame_idx[0] = max(frame_idx[0] - 1, 0)
             refresh()
 
+        elif event.key == '?':
+            _print_help()
+
     fig.canvas.mpl_connect('button_press_event', on_tpf_click)
     fig.canvas.mpl_connect('key_press_event', on_key)
 
     fig.suptitle(os.path.basename(filename), fontsize=11, fontweight='bold')
 
-    print("\n" + "="*50)
-    print("TESS SKY CORRECTOR")
-    print("="*50)
-    print("  o         activar zoom (rectángulo) de matplotlib")
-    print("  p         activar pan/arrastre (drag) de matplotlib")
-    print("  h         restablecer vista original (home)")
-    print("  a         activar/desactivar modo selección de máscara de cielo")
-    print("            (en modo selección: click para agregar/quitar pixel del cielo)")
-    print("  m         alternar modo corrección: PCA  <->  Mediana")
-    print("  +/-       aumentar/disminuir threshold de máscara de cielo")
-    print("  ↑/↓       más/menos componentes PCA")
-    print("  j / l     frame anterior / siguiente del TPF")
-    print("  z         guardar curva corregida  ->  lcs/tess-corrected_*.csv")
-    print("  q         cerrar (pregunta si guardar)")
-    print("="*50)
+    def _print_help():
+        print("\n" + "="*50)
+        print("TESS SKY CORRECTOR")
+        print("="*50)
+        print("  o         activar zoom (rectángulo) de matplotlib")
+        print("  p         activar pan/arrastre (drag) de matplotlib")
+        print("  h         restablecer vista original (home)")
+        print("  a         activar/desactivar modo selección de máscara de cielo")
+        print("            (en modo selección: click para agregar/quitar pixel del cielo)")
+        print("  m         alternar modo corrección: PCA  <->  Mediana")
+        print("  +/-       aumentar/disminuir threshold de máscara de cielo")
+        print("  ↑/↓       más/menos componentes PCA")
+        print("  j / l     frame anterior / siguiente del TPF")
+        print("  z         guardar curva corregida  ->  lcs/tess-corrected_*.csv")
+        print("  ?         mostrar esta ayuda")
+        print("  q         cerrar (pregunta si guardar)")
+        print("="*50)
+
+    _print_help()
 
     plt.show()
 

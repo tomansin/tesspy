@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-make_lc.py - Visualizador interactivo de TPF TESS en formato FITS para generar apertura y curva de luz.
+aperture.py - Visualizador interactivo de TPF TESS en formato FITS para generar apertura y curva de luz.
 
 Uso:
-    make_lc.py <archivo.fits>
+    aperture.py <archivo.fits>
 """
 
 import argparse
@@ -293,6 +293,9 @@ def plot_tpf_viewer(tpf, filename):
         elif event.key == 'z':
             do_save_lc()
 
+        elif event.key == '?':
+            _print_help()
+
     # ── Hover sobre fuentes Gaia ──────────────────────────────────────────────
     def on_hover(event):
         annot = hover_annot[0]
@@ -326,21 +329,25 @@ def plot_tpf_viewer(tpf, filename):
 
     fig.suptitle(os.path.basename(filename), fontsize=11, fontweight='bold')
 
-    print("\n" + "="*50)
-    print("TESS TPF VIEWER")
-    print("="*50)
-    print("  o         activar zoom (rectángulo) de matplotlib")
-    print("  p         activar pan/arrastre (drag) de matplotlib")
-    print("  h         restablecer vista original (home)")
-    print("  j / l     frame anterior / siguiente")
-    print("  a         activar/desactivar modo seleccion de pixeles")
-    print("            (en modo seleccion: click para agregar/quitar pixel)")
-    print("  b         cargar/mostrar/ocultar fuentes Gaia DR3 (Gmag<14)")
-    print("            (hover sobre una fuente para ver su DR3 ID y Gmag)")
-    print("  x         guardar apertura  ->  apers/tess-aperture_*.csv")
-    print("  z         guardar curva de luz  ->  lcs/tess-uncorrected_*.csv")
-    print("  q         cerrar (pregunta si guardar)")
-    print("="*50)
+    def _print_help():
+        print("\n" + "="*50)
+        print("TESS TPF VIEWER")
+        print("="*50)
+        print("  o         activar zoom (rectángulo) de matplotlib")
+        print("  p         activar pan/arrastre (drag) de matplotlib")
+        print("  h         restablecer vista original (home)")
+        print("  j / l     frame anterior / siguiente")
+        print("  a         activar/desactivar modo seleccion de pixeles")
+        print("            (en modo seleccion: click para agregar/quitar pixel)")
+        print("  b         cargar/mostrar/ocultar fuentes Gaia DR3 (Gmag<14)")
+        print("            (hover sobre una fuente para ver su DR3 ID y Gmag)")
+        print("  x         guardar apertura  ->  apers/tess-aperture_*.csv")
+        print("  z         guardar curva de luz  ->  lcs/tess-uncorrected_*.csv")
+        print("  ?         mostrar esta ayuda")
+        print("  q         cerrar (pregunta si guardar)")
+        print("="*50)
+
+    _print_help()
 
     plt.show()
 

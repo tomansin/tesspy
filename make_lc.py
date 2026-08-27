@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 make_lc.py - Visualizador interactivo de TPF TESS en formato FITS para generar apertura y curva de luz.
 
@@ -7,16 +6,17 @@ Uso:
     make_lc.py <archivo.fits>
 """
 
+import argparse
+import os
+import sys
+
+import lightkurve as lk
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-import os
-import argparse
-from matplotlib.gridspec import GridSpec
-from matplotlib import patches
-import lightkurve as lk
+from astropy.coordinates import Angle, SkyCoord
 from astroquery.vizier import Vizier
-from astropy.coordinates import SkyCoord, Angle
+from matplotlib import patches
+from matplotlib.gridspec import GridSpec
 
 
 def load_tpf(filename):
@@ -30,7 +30,7 @@ def load_tpf(filename):
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found")
         return None
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         print(f"Error loading TPF: {e}")
         return None
 
@@ -62,7 +62,7 @@ def query_gaia(tpf):
 
         print(f"  Gaia: {len(bright)} fuente(s) con Gmag < 14.")
         return bright
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         print(f"  Error consultando Gaia: {e}")
         return None
 
@@ -95,7 +95,7 @@ def plot_tpf_viewer(tpf, filename):
     def compute_lc():
         try:
             lc_cache[0] = tpf.to_lightcurve(aperture_mask=aperture_mask[0])
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             print(f"  Error calculando light curve: {e}")
             lc_cache[0] = None
 
@@ -109,7 +109,7 @@ def plot_tpf_viewer(tpf, filename):
             ax_tpf.set_ylabel('Dec')
             hover_annot[0] = ax_tpf.annotate(
                 '', xy=(0, 0), xytext=(8, 8), textcoords='offset points',
-                bbox=dict(boxstyle='round,pad=0.3', fc='wheat', alpha=0.85),
+                bbox={"boxstyle": 'round,pad=0.3', "fc": 'wheat', "alpha": 0.85},
                 fontsize=8, visible=False, zorder=10
             )
         else:
@@ -150,8 +150,8 @@ def plot_tpf_viewer(tpf, filename):
                     ax_tpf.add_patch(circ)
                     tpf_patches.append(circ)
                     gaia_pix_coords[0].append((px, py, str(source['Source']), float(source['Gmag'])))
-                except Exception:
-                    pass
+                except (ValueError, TypeError):
+                    continue
 
         mode_tag = '  [SELECCION]' if selection_active[0] else ''
         gaia_tag = '  [GAIA]' if show_gaia[0] else ''
@@ -212,7 +212,7 @@ def plot_tpf_viewer(tpf, filename):
                               dtype=int)
             np.savetxt(out, coords, delimiter=',', header='x,y', fmt='%d', comments='')
             print(f"  Apertura guardada: {os.path.abspath(out)}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  Error guardando apertura: {e}")
 
     def do_save_lc():
@@ -226,7 +226,7 @@ def plot_tpf_viewer(tpf, filename):
             lc['sector'] = tpf.sector
             lc.to_csv(path_or_buf=out, overwrite=True)
             print(f"  Curva de luz guardada: {os.path.abspath(out)}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  Error guardando curva de luz: {e}")
 
     # ── Clic en TPF ───────────────────────────────────────────────────────────
@@ -236,8 +236,8 @@ def plot_tpf_viewer(tpf, filename):
         if event.button != 1:
             return
 
-        x = int(round(event.xdata))
-        y = int(round(event.ydata))
+        x = round(event.xdata)
+        y = round(event.ydata)
         ny, nx = aperture_mask[0].shape
         if not (0 <= x < nx and 0 <= y < ny):
             return
@@ -329,6 +329,9 @@ def plot_tpf_viewer(tpf, filename):
     print("\n" + "="*50)
     print("TESS TPF VIEWER")
     print("="*50)
+    print("  o         activar zoom (rectángulo) de matplotlib")
+    print("  p         activar pan/arrastre (drag) de matplotlib")
+    print("  h         restablecer vista original (home)")
     print("  j / l     frame anterior / siguiente")
     print("  a         activar/desactivar modo seleccion de pixeles")
     print("            (en modo seleccion: click para agregar/quitar pixel)")

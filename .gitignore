@@ -1,3 +1,4 @@
 *.csv
 *.fits
 pruebas.py
+pyrightconfig.json

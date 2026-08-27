@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 download_tpfs.py — Descarga Target Pixel Files (TPF) de TESS para un objeto dado
 usando el servicio TESScut a través de lightkurve.
@@ -17,12 +16,13 @@ Ejemplos:
     python download_tpfs.py "TOI-700" --cutout-size 10 20
 """
 
+import argparse
 import os
 import sys
 import time
-import argparse
-from tqdm import tqdm
+
 import lightkurve as lk
+from tqdm import tqdm
 
 
 def _safe_name(target: str) -> str:
@@ -84,7 +84,7 @@ def main():
     try:
         print(f"Buscando '{target}' en TESScut...")
         search_result = lk.search_tesscut(target)
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         print(f"Error de conexión o búsqueda en MAST: {e}")
         sys.exit(1)
 
@@ -97,7 +97,7 @@ def main():
     print("OBSERVACIONES ENCONTRADAS")
     print(f"{'='*60}")
     print(search_result)
-    print(f"\nConfiguración de descarga:")
+    print("\nConfiguración de descarga:")
     print(f"  Cutout size: {cutout_size[0]}x{cutout_size[1]} píxeles")
     print(f"  Directorio:  {os.path.abspath('tpfs')}")
     print(f"{'='*60}")
@@ -143,7 +143,7 @@ def main():
                 except OSError as e:
                     failed_count += 1
                     tqdm.write(f"  ✗ Observación {i+1}: error al guardar el archivo — {e}")
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     failed_count += 1
                     tqdm.write(f"  ✗ Observación {i+1}: error al descargar — {e}")
                 finally:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 correct_lc.py - Corrector de fondo de cielo para TPF TESS.
 
@@ -7,15 +6,16 @@ Uso:
     correct_lc.py <archivo.fits>
 """
 
+import argparse
+import os
+import sys
+
+import lightkurve as lk
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-import os
-import argparse
-from matplotlib.gridspec import GridSpec
+from lightkurve.correctors import DesignMatrix, RegressionCorrector
 from matplotlib import patches
-import lightkurve as lk
-from lightkurve.correctors import RegressionCorrector, DesignMatrix
+from matplotlib.gridspec import GridSpec
 
 
 def load_tpf(filename):
@@ -29,7 +29,7 @@ def load_tpf(filename):
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found")
         return None
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         print(f"Error loading TPF: {e}")
         return None
 
@@ -51,7 +51,7 @@ def load_aperture_file(aper_file, tpf_shape):
                 mask[y, x] = True
         print(f"  Apertura cargada: {int(np.sum(mask))} pixel(s) desde {aper_file}")
         return mask
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"  Error cargando apertura '{aper_file}': {e}")
         return None
 
@@ -69,10 +69,14 @@ def compute_correction(tpf, sky_mask, aperture_mask, pca_number=3):
         dm = DesignMatrix(tpf.flux[:, sky_mask], name='regressors').pca(pca_number)
         lc_raw = tpf.to_lightcurve(aperture_mask=aperture_mask)
         lc_clean = lc_raw.remove_nans()
+        if hasattr(lc_clean, 'flux_err') and lc_clean.flux_err is not None:
+            lc_clean = lc_clean[lc_clean.flux_err > 0]
 
         valid = np.isfinite(lc_raw.flux.value)
+        if hasattr(lc_raw, 'flux_err') and lc_raw.flux_err is not None:
+            valid &= (lc_raw.flux_err.value > 0)
         if np.sum(valid) < len(lc_raw.flux):
-            dm_clean = DesignMatrix(dm.values[valid], name='regressors')
+            dm_clean = DesignMatrix(dm.values[valid], name='regressors')  # type: ignore[reportIndexIssue]
         else:
             dm_clean = dm
 
@@ -83,7 +87,7 @@ def compute_correction(tpf, sky_mask, aperture_mask, pca_number=3):
         lc_corrected = lc_clean - model
 
         return dm, lc_clean, lc_corrected
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"  Error en PCA/corrección: {e}")
         return None, None, None
 
@@ -103,7 +107,7 @@ def compute_correction_median(tpf, sky_mask, aperture_mask):
         lc_corrected.flux = (lc_clean.flux.value - bkg[valid]) * lc_clean.flux.unit
 
         return bkg, lc_clean, lc_corrected
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"  Error en corrección por mediana: {e}")
         return None, None, None
 
@@ -113,7 +117,7 @@ def plot_sky_viewer(tpf, filename):
 
     plt.rcParams['keymap.yscale'] = [k for k in plt.rcParams['keymap.yscale'] if k != 'l']
 
-    fig = plt.figure(figsize=(16, 8))
+    fig = plt.figure(figsize=(14, 6))
     gs = GridSpec(2, 2, width_ratios=[1, 2], hspace=0.4, wspace=0.3)
     ax_tpf = fig.add_subplot(gs[:, 0], projection=tpf.wcs)
     ax_pca = fig.add_subplot(gs[0, 1])
@@ -311,7 +315,7 @@ def plot_sky_viewer(tpf, filename):
             lc['sector'] = tpf.sector
             lc.to_csv(path_or_buf=out, overwrite=True)
             print(f"  Curva corregida guardada: {os.path.abspath(out)}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  Error guardando curva: {e}")
 
     # ── Clic en TPF ───────────────────────────────────────────────────────────
@@ -324,8 +328,8 @@ def plot_sky_viewer(tpf, filename):
         if sky_mask[0] is None:
             return
 
-        x = int(round(event.xdata))
-        y = int(round(event.ydata))
+        x = round(event.xdata)
+        y = round(event.ydata)
         ny, nx = sky_mask[0].shape
         if not (0 <= x < nx and 0 <= y < ny):
             return
@@ -407,6 +411,9 @@ def plot_sky_viewer(tpf, filename):
     print("\n" + "="*50)
     print("TESS SKY CORRECTOR")
     print("="*50)
+    print("  o         activar zoom (rectángulo) de matplotlib")
+    print("  p         activar pan/arrastre (drag) de matplotlib")
+    print("  h         restablecer vista original (home)")
     print("  a         activar/desactivar modo selección de máscara de cielo")
     print("            (en modo selección: click para agregar/quitar pixel del cielo)")
     print("  m         alternar modo corrección: PCA  <->  Mediana")
@@ -419,11 +426,10 @@ def plot_sky_viewer(tpf, filename):
 
     plt.show()
 
-    if pending[0] == 'quit':
-        if lc_cor_state[0] is not None:
-            resp = input("\n  Guardar curva corregida? [S/n]: ").strip().lower()
-            if resp not in ('n', 'no'):
-                do_save_lc()
+    if pending[0] == 'quit' and lc_cor_state[0] is not None:
+        resp = input("\n  Guardar curva corregida? [S/n]: ").strip().lower()
+        if resp not in ('n', 'no'):
+            do_save_lc()
 
 
 def main():

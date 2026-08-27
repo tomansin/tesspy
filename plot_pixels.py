@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 plot_pixels.py — Genera imágenes JPEG pixel-by-pixel de archivos TPF (Target Pixel Files)
 de misiones TESS/Kepler/K2 usando lightkurve. Solo guarda las imágenes, sin ventanas gráficas.
@@ -14,13 +13,15 @@ Ejemplos:
     python plot_pixels.py sector1/*.fits sector2/*.fits
 """
 
-import sys
-import os
 import glob
+import os
+import sys
+
 import matplotlib
+
 matplotlib.use("Agg")  # backend no interactivo: nunca abre ventanas
-import matplotlib.pyplot as plt
 import lightkurve as lk
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
@@ -46,7 +47,7 @@ def process_tpf_file(fits_filename: str):
         return False, f"Archivo no encontrado: {fits_filename}", None
     except OSError as e:
         return False, f"Error de lectura FITS: {e}", None
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         return False, f"Error inesperado al leer el archivo: {e}", None
 
     if not hasattr(tpf, "plot_pixels"):
@@ -60,7 +61,7 @@ def process_tpf_file(fits_filename: str):
     except OSError as e:
         plt.close("all")
         return False, f"Error al guardar '{jpg_filename}': {e}", None
-    except Exception as e:
+    except (ValueError, TypeError) as e:
         plt.close("all")
         return False, f"Error al generar o guardar la figura: {e}", None
 

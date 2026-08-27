@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 norm_lc.py - Normalizador interactivo de curvas de luz TESS.
 
@@ -7,13 +6,14 @@ Uso:
     norm_lc.py <curva.csv>
 """
 
+import argparse
 import bisect
+import os
+import sys
+import termios
+
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-import os
-import argparse
-import termios
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector
 
@@ -36,7 +36,7 @@ def load_lightcurve(filename):
         if n_nan:
             print(f"  Puntos con flujo NaN: {n_nan} (excluidos de los ajustes)")
         return time, flux, flux_err, data, header
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"Error cargando curva de luz: {e}")
         return None, None, None, None, None
 
@@ -71,7 +71,7 @@ def sigma_clip_legendre(t_norm, flux, flux_err, order, xi_lo=2.0, xi_hi=3.0):
             coeffs = c
 
         return coeffs, t_c, f_c
-    except Exception as e:
+    except ValueError as e:
         print(f"  Error en ajuste: {e}")
         return None, None, None
 
@@ -155,10 +155,11 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
         culled_artists.clear()
         seg_coeffs.clear()
 
-    COLORS = plt.cm.tab10.colors
+    COLORS = plt.cm.tab10.colors  # type: ignore[reportAttributeAccessIssue]
 
     def refit():
         keep_view = view_state['init']
+        xlim = ylim_lc = ylim_norm = None
         if keep_view:
             xlim      = ax_lc.get_xlim()
             ylim_lc   = ax_lc.get_ylim()
@@ -336,7 +337,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
             np.savetxt(out, out_data, delimiter=',',
                        header=out_header, comments='', fmt='%.17g')
             print(f"  Curva normalizada guardada: {os.path.abspath(out)}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  Error guardando: {e}")
 
     # ── Teclado ───────────────────────────────────────────────────────────────
@@ -411,6 +412,9 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
     print("\n" + "="*50)
     print("TESS LC NORMALIZER")
     print("="*50)
+    print("  o         activar zoom (rectángulo) de matplotlib")
+    print("  p         activar pan/arrastre (drag) de matplotlib")
+    print("  h         restablecer vista original (home)")
     print("  espacio   ciclar al siguiente segmento")
     print("  a         activar modo discontinuidad (click para colocar)")
     print("  d         eliminar última discontinuidad")
@@ -449,6 +453,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
 
     def _redraw2():
         keep_view = view2_state['init']
+        xlim2 = ylim2 = None
         if keep_view:
             xlim2 = ax2.get_xlim()
             ylim2 = ax2.get_ylim()
@@ -494,7 +499,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
                        header=out_header, comments='', fmt='%.17g')
             n_kept = int(np.sum(mask))
             print(f"  Guardado: {os.path.abspath(out)}  ({n_kept} puntos)")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  Error guardando: {e}")
 
     def onselect2(xmin, xmax):
@@ -512,7 +517,7 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
             span2[0] = SpanSelector(
                 ax2, onselect2, 'horizontal',
                 useblit=True,
-                props=dict(alpha=0.2, facecolor='red'),
+                props={'alpha': 0.2, 'facecolor': 'red'},
                 interactive=True,
                 drag_from_anywhere=True
             )
@@ -545,6 +550,9 @@ def plot_norm_viewer(time, flux, flux_err, data_all, header, filename):
     print("\n" + "="*50)
     print("VISTA NORMALIZADA")
     print("="*50)
+    print("  o         activar zoom (rectángulo) de matplotlib")
+    print("  p         activar pan/arrastre (drag) de matplotlib")
+    print("  h         restablecer vista original (home)")
     print("  a         activar/desactivar selección de rangos a eliminar")
     print("  e         restaurar último rango eliminado")
     print("  z         guardar  ->  lcs/tess-normalized_*.csv")

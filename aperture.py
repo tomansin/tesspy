@@ -38,7 +38,7 @@ def load_tpf(filename):
 def query_gaia(tpf):
     """
     Consulta Gaia DR3 en la region del TPF.
-    Retorna la tabla de fuentes con Gmag < 20, o None si falla.
+    Retorna la tabla de fuentes con Gmag < 15, o None si falla.
     """
     print("  Consultando Gaia DR3...", flush=True)
     try:
@@ -55,12 +55,12 @@ def query_gaia(tpf):
             return None
 
         sources = result[0]
-        bright = sources[sources["Gmag"] < 20]
+        bright = sources[sources["Gmag"] < 15]
         if len(bright) == 0:
-            print("  Gaia: ninguna fuente con Gmag < 20.")
+            print("  Gaia: ninguna fuente con Gmag < 15.")
             return None
 
-        print(f"  Gaia: {len(bright)} fuente(s) con Gmag < 20.")
+        print(f"  Gaia: {len(bright)} fuente(s) con Gmag < 15.")
         return bright
     except (OSError, ValueError, TypeError) as e:
         print(f"  Error consultando Gaia: {e}")
@@ -377,7 +377,7 @@ def plot_tpf_viewer(tpf, filename):
         print("  j / l     frame anterior / siguiente")
         print("  a         activar/desactivar modo seleccion de pixeles")
         print("            (en modo seleccion: click para agregar/quitar pixel)")
-        print("  b         cargar/mostrar/ocultar fuentes Gaia DR3 (Gmag<20)")
+        print("  b         cargar/mostrar/ocultar fuentes Gaia DR3 (Gmag<15)")
         print("            (hover sobre una fuente para ver su DR3 ID y Gmag)")
         print("  x         guardar apertura  ->  apers/tess-aperture_*.csv")
         print("  z         guardar curva de luz  ->  lcs/tess-uncorrected_*.csv")

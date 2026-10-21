@@ -280,6 +280,19 @@ def plot_sky_viewer(tpf, filename):
         ax_lc.grid(True, alpha=0.3, linestyle='--')
         ax_lc.axvline(tpf.time.value[frame_idx[0]], color='red',
                       linestyle='--', linewidth=1, alpha=0.8)
+        if lc_cor is not None and np.any(valid2):
+            y = f2[valid2]
+        elif np.any(valid):
+            y = f[valid]
+        else:
+            y = None
+
+        if y is not None:
+            lo = np.percentile(y, 1)
+            hi = np.percentile(y, 99)
+            margin = (hi - lo) * 0.1
+            ax_lc.set_ylim(lo - margin, hi + margin)
+
         ax_lc.legend(loc='best', fontsize=8)
 
     def refresh():
